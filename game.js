@@ -480,9 +480,23 @@ function spawnEnemy(type) {
   hpFill.position.set(0, 0, 0.001);
   hpBg.add(hpFill);
 
+  // Texto de HP (CanvasTexture)
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  const maxHp = Math.round(def.hp * waveScale);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.minFilter = THREE.LinearFilter;
+  const spriteMat = new THREE.SpriteMaterial({ map: tex, depthTest: false });
+  const hpSprite = new THREE.Sprite(spriteMat);
+  hpSprite.position.y = def.size * 2 + 0.6;
+  hpSprite.scale.set(1.5, 0.75, 1);
+  group.add(hpSprite);
+
   scene.add(group);
 
-  const maxHp = Math.round(def.hp * waveScale);
   const enemy = {
     type, def,
     hp: maxHp, maxHp,
@@ -493,11 +507,34 @@ function spawnEnemy(type) {
     group,
     body,
     hpFill,
+    hpSprite,
+    hpCanvas: canvas,
+    hpCtx: ctx,
+    hpTex: tex,
     waypointIndex: 0,
     dead: false,
     reached: false,
   };
+
+  updateEnemyHPText(enemy); // Inicializar texto
   enemies.push(enemy);
+}
+
+function updateEnemyHPText(enemy) {
+  const ctx = enemy.hpCtx;
+  ctx.clearRect(0, 0, 128, 64);
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 36px Rajdhani, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Dibujar borde negro para legibilidad
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 4;
+  ctx.strokeText(Math.ceil(enemy.hp).toString(), 64, 32);
+  ctx.fillText(Math.ceil(enemy.hp).toString(), 64, 32);
+
+  enemy.hpTex.needsUpdate = true;
 }
 
 function updateEnemies(dt) {
@@ -537,11 +574,18 @@ function updateEnemies(dt) {
 
     // Actualizar barra de HP — orientarla hacia cámara
     const hpRatio = e.hp / e.maxHp;
-    e.hpFill.scale.x = hpRatio;
+    e.hpFill.scale.x = Math.max(0.001, hpRatio);
     e.hpFill.position.x = -(1 - hpRatio) * 0.39;
     const hpColor = hpRatio > 0.6 ? 0x44ff44 : hpRatio > 0.3 ? 0xffaa00 : 0xff3333;
     e.hpFill.material.color.setHex(hpColor);
     e.group.children.find(c => c === e.group.children[2]).lookAt(camera.position);
+
+    // Actualizar texto si cambió el HP entero
+    const currentHpInt = Math.ceil(e.hp);
+    if (e._lastHpInt !== currentHpInt) {
+      updateEnemyHPText(e);
+      e._lastHpInt = currentHpInt;
+    }
   }
 
   // Quitar muertos/alcanzados
@@ -551,7 +595,12 @@ function updateEnemies(dt) {
 function damageEnemy(enemy, amount) {
   const effective = amount * (1 - enemy.armor);
   enemy.hp -= effective;
-  if (enemy.hp <= 0) killEnemy(enemy);
+
+  if (enemy.hp <= 0) {
+    killEnemy(enemy);
+  } else {
+    updateEnemyHPText(enemy); // Actualizar texto al recibir daño
+  }
 }
 
 function killEnemy(enemy) {
@@ -570,8 +619,17 @@ function killEnemy(enemy) {
 // ============================================================
 function updateTowers(dt) {
   for (const tower of towers) {
-    // Buscar objetivo
-    if (!tower.target || tower.target.dead || tower.target.reached) {
+    // Buscar objetivo si no tiene o si salió del rango
+    if (tower.target) {
+      const tp = tower.group.position;
+      const ep = tower.target.group.position;
+      const dist = Math.sqrt(Math.pow(ep.x - tp.x, 2) + Math.pow(ep.z - tp.z, 2));
+      if (tower.target.dead || tower.target.reached || dist > tower.range * TILE_SIZE) {
+        tower.target = null;
+      }
+    }
+
+    if (!tower.target) {
       tower.target = findTarget(tower);
     }
 
@@ -608,11 +666,14 @@ function updateTowers(dt) {
 function findTarget(tower) {
   let best = null, bestProgress = -1;
   const tp = tower.group.position;
+  // El rango definido en defs está en TILE_SIZE. Lo convertimos a unidades 3D reales.
+  const worldRange = tower.range * TILE_SIZE;
+
   for (const e of enemies) {
     if (e.dead || e.reached) continue;
     const ep = e.group.position;
     const dx = ep.x - tp.x, dz = ep.z - tp.z;
-    if (Math.sqrt(dx * dx + dz * dz) <= tower.range) {
+    if (Math.sqrt(dx * dx + dz * dz) <= worldRange) {
       // Preferir el que más avanzó por el camino
       const progress = e.waypointIndex + e.group.position.distanceTo(WAYPOINTS_WORLD[Math.min(e.waypointIndex, WAYPOINTS_WORLD.length - 1)]);
       if (progress > bestProgress) { bestProgress = progress; best = e; }
@@ -818,7 +879,9 @@ function updateBetween(dt) {
 // ============================================================
 function showRange(worldX, worldZ, radius) {
   hideRange();
-  const geo = new THREE.RingGeometry(radius - 0.08, radius, 48);
+  // Multiplicar el radio por TILE_SIZE para que el círculo visual coincida con el rango lógico
+  const worldRadius = radius * TILE_SIZE;
+  const geo = new THREE.RingGeometry(worldRadius - 0.08, worldRadius, 48);
   const mat = new THREE.MeshBasicMaterial({ color: 0x88ccff, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
   rangeMesh = new THREE.Mesh(geo, mat);
   rangeMesh.position.set(worldX, 0.15, worldZ);
