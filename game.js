@@ -7,10 +7,10 @@
 // ============================================================
 //  CONSTANTS & CONFIG
 // ============================================================
-const GRID_COLS   = 20;
-const GRID_ROWS   = 14;
-const TILE_SIZE   = 2;
-const TOTAL_WAVES = 15;
+const GRID_COLS = 20;
+const GRID_ROWS = 14;
+const TILE_SIZE = 2;
+let TOTAL_WAVES = 20; // Default changed dynamically
 
 const TOWER_DEFS = {
   gun: {
@@ -32,24 +32,24 @@ const TOWER_DEFS = {
 };
 
 const ENEMY_DEFS = {
-  grunt:  { name: 'Grunt',  hp: 100, speed: 2.2, armor: 0,    reward: 10, color: 0x66cc44, size: 0.35, lives: 1 },
-  brute:  { name: 'Brute',  hp: 350, speed: 1.2, armor: 0.3,  reward: 25, color: 0xaa66ff, size: 0.55, lives: 3 },
-  scout:  { name: 'Scout',  hp: 60,  speed: 4.0, armor: 0,    reward: 15, color: 0xffdd44, size: 0.28, lives: 1 },
+  grunt: { name: 'Grunt', hp: 100, speed: 2.2, armor: 0, reward: 10, color: 0x66cc44, size: 0.35, lives: 1 },
+  brute: { name: 'Brute', hp: 350, speed: 1.2, armor: 0.3, reward: 25, color: 0xaa66ff, size: 0.55, lives: 3 },
+  scout: { name: 'Scout', hp: 60, speed: 4.0, armor: 0, reward: 15, color: 0xffdd44, size: 0.28, lives: 1 },
 };
 
 // Waypoints define el camino (en coordenadas de grilla)
 const WAYPOINTS_GRID = [
-  { c: 0,  r: 2  },
-  { c: 4,  r: 2  },
-  { c: 4,  r: 6  },
-  { c: 9,  r: 6  },
-  { c: 9,  r: 1  },
-  { c: 14, r: 1  },
+  { c: 0, r: 2 },
+  { c: 4, r: 2 },
+  { c: 4, r: 6 },
+  { c: 9, r: 6 },
+  { c: 9, r: 1 },
+  { c: 14, r: 1 },
   { c: 14, r: 10 },
-  { c: 9,  r: 10 },
-  { c: 9,  r: 7  },  // giro rápido adicional
-  { c: 5,  r: 7  },  // no, corregir — mantener trazo limpio
-  { c: 5,  r: 12 },
+  { c: 9, r: 10 },
+  { c: 9, r: 7 },  // giro rápido adicional
+  { c: 5, r: 7 },  // no, corregir — mantener trazo limpio
+  { c: 5, r: 12 },
   { c: 19, r: 12 },
 ];
 
@@ -57,41 +57,41 @@ const WAYPOINTS_GRID = [
 //  GLOBALS
 // ============================================================
 let scene, camera, renderer, clock;
-let orbitState  = { active: false, lastX: 0, lastY: 0 };
-let panState    = { active: false, lastX: 0, lastY: 0 };
+let orbitState = { active: false, lastX: 0, lastY: 0 };
+let panState = { active: false, lastX: 0, lastY: 0 };
 
 // Terreno
-let gridTiles   = []; // 2D array [r][c]  → { mesh, type: 'path'|'build'|'blocked' }
-let pathSet     = new Set(); // "r,c" strings that are on the path
+let gridTiles = []; // 2D array [r][c]  → { mesh, type: 'path'|'build'|'blocked' }
+let pathSet = new Set(); // "r,c" strings that are on the path
 
 // Entidades
-let towers      = [];
-let enemies     = [];
+let towers = [];
+let enemies = [];
 let projectiles = [];
-let particles   = [];
+let particles = [];
 
 // Selección / placemant
 let selectedTowerType = null;  // 'gun'|'cannon'|'laser' — modo de colocación
-let selectedTower     = null;  // objeto torre ya colocado
-let rangeMesh         = null;  // círculo de rango visual
+let selectedTower = null;  // objeto torre ya colocado
+let rangeMesh = null;  // círculo de rango visual
 
 // Estado del juego
-let gold   = 150;
-let lives  = 20;
-let wave   = 0;
-let score  = 0;
+let gold = 150;
+let lives = 20;
+let wave = 0;
+let score = 0;
 let gameState = 'menu'; // 'menu' | 'playing' | 'between' | 'gameover' | 'win'
 let gameSpeed = 1;
 
 // Oleada
-let waveQueue      = [];   // lista de spawns pendientes
-let spawnTimer     = 0;
-let betweenTimer   = 0;
+let waveQueue = [];   // lista de spawns pendientes
+let spawnTimer = 0;
+let betweenTimer = 0;
 const BETWEEN_TIME = 8;    // segundos entre oleadas
 
 // Raycasting
 const raycaster = new THREE.Raycaster();
-const mouse     = new THREE.Vector2();
+const mouse = new THREE.Vector2();
 
 // ============================================================
 //  INICIALIZACIÓN THREE.JS
@@ -122,13 +122,13 @@ function initThree() {
   const sunLight = new THREE.DirectionalLight(0xfff4e0, 1.4);
   sunLight.position.set(20, 40, 15);
   sunLight.castShadow = true;
-  sunLight.shadow.mapSize.width  = 2048;
+  sunLight.shadow.mapSize.width = 2048;
   sunLight.shadow.mapSize.height = 2048;
   sunLight.shadow.camera.near = 0.5;
-  sunLight.shadow.camera.far  = 120;
-  sunLight.shadow.camera.left   = -40;
-  sunLight.shadow.camera.right  =  40;
-  sunLight.shadow.camera.top    =  40;
+  sunLight.shadow.camera.far = 120;
+  sunLight.shadow.camera.left = -40;
+  sunLight.shadow.camera.right = 40;
+  sunLight.shadow.camera.top = 40;
   sunLight.shadow.camera.bottom = -40;
   scene.add(sunLight);
 
@@ -154,7 +154,7 @@ function addSkybox() {
   const starCount = 400;
   const positions = new Float32Array(starCount * 3);
   for (let i = 0; i < starCount; i++) {
-    positions[i * 3]     = (Math.random() - 0.5) * 380;
+    positions[i * 3] = (Math.random() - 0.5) * 380;
     positions[i * 3 + 1] = Math.random() * 120 + 20;
     positions[i * 3 + 2] = (Math.random() - 0.5) * 380;
   }
@@ -194,16 +194,16 @@ function buildMap() {
 
   // Crear tiles
   gridTiles = [];
-  const groundMat   = new THREE.MeshLambertMaterial({ color: 0x1a3a1a });
-  const pathMat     = new THREE.MeshLambertMaterial({ color: 0xb8a87a });
+  const groundMat = new THREE.MeshLambertMaterial({ color: 0x1a3a1a });
+  const pathMat = new THREE.MeshLambertMaterial({ color: 0xb8a87a });
   const pathEdgeMat = new THREE.MeshLambertMaterial({ color: 0x9a8c60 });
 
   for (let r = 0; r < GRID_ROWS; r++) {
     gridTiles[r] = [];
     for (let c = 0; c < GRID_COLS; c++) {
       const isPath = pathSet.has(`${r},${c}`);
-      const geo  = new THREE.BoxGeometry(TILE_SIZE - 0.04, isPath ? 0.15 : 0.1, TILE_SIZE - 0.04);
-      const mat  = isPath ? pathMat : groundMat;
+      const geo = new THREE.BoxGeometry(TILE_SIZE - 0.04, isPath ? 0.15 : 0.1, TILE_SIZE - 0.04);
+      const mat = isPath ? pathMat : groundMat;
       const mesh = new THREE.Mesh(geo, mat);
       mesh.receiveShadow = true;
 
@@ -246,9 +246,9 @@ function addPathMarkings() {
 }
 
 function addDecorations() {
-  const treeMat  = new THREE.MeshLambertMaterial({ color: 0x2d7a2d });
+  const treeMat = new THREE.MeshLambertMaterial({ color: 0x2d7a2d });
   const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5a3c1a });
-  const rockMat  = new THREE.MeshLambertMaterial({ color: 0x556677 });
+  const rockMat = new THREE.MeshLambertMaterial({ color: 0x556677 });
 
   for (let r = 0; r < GRID_ROWS; r++) {
     for (let c = 0; c < GRID_COLS; c++) {
@@ -259,20 +259,20 @@ function addDecorations() {
           // Árbol
           const trunkH = 0.6 + Math.random() * 0.4;
           const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, trunkH, 5), trunkMat);
-          trunk.position.set(w.x + (Math.random()-0.5)*0.4, trunkH/2 + 0.1, w.z + (Math.random()-0.5)*0.4);
+          trunk.position.set(w.x + (Math.random() - 0.5) * 0.4, trunkH / 2 + 0.1, w.z + (Math.random() - 0.5) * 0.4);
           trunk.castShadow = true;
           scene.add(trunk);
 
           const treeH = 0.7 + Math.random() * 0.5;
           const tree = new THREE.Mesh(new THREE.ConeGeometry(0.45, treeH, 6), treeMat);
-          tree.position.set(trunk.position.x, trunk.position.y + trunkH/2 + treeH/2, trunk.position.z);
+          tree.position.set(trunk.position.x, trunk.position.y + trunkH / 2 + treeH / 2, trunk.position.z);
           tree.castShadow = true;
           scene.add(tree);
         } else {
           // Roca
           const sz = 0.2 + Math.random() * 0.25;
           const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(sz, 0), rockMat);
-          rock.position.set(w.x + (Math.random()-0.5)*0.5, sz*0.6, w.z + (Math.random()-0.5)*0.5);
+          rock.position.set(w.x + (Math.random() - 0.5) * 0.5, sz * 0.6, w.z + (Math.random() - 0.5) * 0.5);
           rock.rotation.set(Math.random(), Math.random(), Math.random());
           rock.castShadow = true;
           scene.add(rock);
@@ -396,8 +396,8 @@ function upgradeTower(tower) {
 
   gold -= cost;
   const mult = tower.def.upgradeMult[lvl - 1];
-  tower.damage   *= mult;
-  tower.range    *= 1.1;
+  tower.damage *= mult;
+  tower.range *= 1.1;
   tower.fireRate *= (tower.def.continuous ? 1 : 1.15);
   tower.level++;
 
@@ -612,9 +612,9 @@ function findTarget(tower) {
     if (e.dead || e.reached) continue;
     const ep = e.group.position;
     const dx = ep.x - tp.x, dz = ep.z - tp.z;
-    if (Math.sqrt(dx*dx + dz*dz) <= tower.range) {
+    if (Math.sqrt(dx * dx + dz * dz) <= tower.range) {
       // Preferir el que más avanzó por el camino
-      const progress = e.waypointIndex + e.group.position.distanceTo(WAYPOINTS_WORLD[Math.min(e.waypointIndex, WAYPOINTS_WORLD.length-1)]);
+      const progress = e.waypointIndex + e.group.position.distanceTo(WAYPOINTS_WORLD[Math.min(e.waypointIndex, WAYPOINTS_WORLD.length - 1)]);
       if (progress > bestProgress) { bestProgress = progress; best = e; }
     }
   }
@@ -623,7 +623,7 @@ function findTarget(tower) {
 
 function fireTower(tower, target) {
   const origin = tower.group.position.clone().add(new THREE.Vector3(0, 1, 0));
-  const tPos   = target.group.position.clone().add(new THREE.Vector3(0, 0.4, 0));
+  const tPos = target.group.position.clone().add(new THREE.Vector3(0, 0.4, 0));
 
   const geo = new THREE.SphereGeometry(tower.type === 'cannon' ? 0.2 : 0.1, 5, 4);
   const mat = new THREE.MeshBasicMaterial({ color: tower.def.projectileColor });
@@ -653,7 +653,7 @@ function damageLaserTarget(tower, target, dt) {
 
   // Dibujar rayo
   const origin = tower.group.position.clone().add(new THREE.Vector3(0, 1, 0));
-  const tPos   = target.group.position.clone().add(new THREE.Vector3(0, 0.4, 0));
+  const tPos = target.group.position.clone().add(new THREE.Vector3(0, 0.4, 0));
 
   if (tower.laserLine) scene.remove(tower.laserLine);
 
@@ -682,7 +682,7 @@ function updateProjectiles(dt) {
     }
 
     const tPos = p.target.group.position.clone().add(new THREE.Vector3(0, 0.4, 0));
-    const dir  = tPos.clone().sub(p.mesh.position).normalize();
+    const dir = tPos.clone().sub(p.mesh.position).normalize();
     p.mesh.position.addScaledVector(dir, p.speed * dt);
 
     const dist = p.mesh.position.distanceTo(tPos);
@@ -746,9 +746,9 @@ function buildWave(waveNum) {
   const queue = [];
   const scale = Math.max(1, waveNum - 1);
 
-  let grunts  = 5 + waveNum * 2;
-  let brutes  = waveNum >= 4 ? Math.floor((waveNum - 3) * 1.5) : 0;
-  let scouts  = waveNum >= 7 ? Math.floor((waveNum - 6) * 2)   : 0;
+  let grunts = 5 + waveNum * 2;
+  let brutes = waveNum >= 4 ? Math.floor((waveNum - 3) * 1.5) : 0;
+  let scouts = waveNum >= 7 ? Math.floor((waveNum - 6) * 2) : 0;
 
   while (grunts + brutes + scouts > 0) {
     // Mezclar tipos aleatoriamente (preferencia grunt al inicio)
@@ -934,9 +934,9 @@ function updateSelectedTowerInfo() {
 //  HUD
 // ============================================================
 function updateHUD() {
-  document.getElementById('hud-gold').textContent  = gold;
+  document.getElementById('hud-gold').textContent = gold;
   document.getElementById('hud-lives').textContent = lives;
-  document.getElementById('hud-wave').textContent  = `${wave} / ${TOTAL_WAVES}`;
+  document.getElementById('hud-wave').textContent = `${wave} / ${TOTAL_WAVES}`;
 
   // Actualizar accesibilidad de tarjetas de torre
   Object.keys(TOWER_DEFS).forEach(type => {
@@ -983,8 +983,8 @@ function onMouseMove(e) {
 
     // Rotar alrededor Y
     const theta = Math.atan2(offset.x, offset.z) - dx;
-    const phi   = Math.max(0.15, Math.min(1.3, Math.atan2(Math.sqrt(offset.x*offset.x + offset.z*offset.z), offset.y) + dy));
-    const r     = offset.length();
+    const phi = Math.max(0.15, Math.min(1.3, Math.atan2(Math.sqrt(offset.x * offset.x + offset.z * offset.z), offset.y) + dy));
+    const r = offset.length();
 
     offset.x = r * Math.sin(phi) * Math.sin(theta);
     offset.y = r * Math.cos(phi);
@@ -1000,16 +1000,16 @@ function onMouseMove(e) {
     panState.lastX = e.clientX;
     panState.lastY = e.clientY;
 
-    const right   = new THREE.Vector3(); camera.getWorldDirection(right); right.cross(camera.up).normalize();
+    const right = new THREE.Vector3(); camera.getWorldDirection(right); right.cross(camera.up).normalize();
     const forward = new THREE.Vector3(); camera.getWorldDirection(forward); forward.y = 0; forward.normalize();
-    camera.position.addScaledVector(right,  -dx);
+    camera.position.addScaledVector(right, -dx);
     camera.position.addScaledVector(forward, dz);
-    const lookat = camera.position.clone().add(new THREE.Vector3().setFromSphericalCoords(1, Math.PI/3, 0));
+    const lookat = camera.position.clone().add(new THREE.Vector3().setFromSphericalCoords(1, Math.PI / 3, 0));
     camera.lookAt(lookat);
   }
 }
 
-function onMouseUp()   { orbitState.active = false; panState.active = false; }
+function onMouseUp() { orbitState.active = false; panState.active = false; }
 function onContextMenu(e) { e.preventDefault(); }
 
 function onWheel(e) {
@@ -1024,29 +1024,35 @@ function onKeyDown(e) {
 // ============================================================
 //  ESTADOS DE JUEGO
 // ============================================================
-function startGame() {
-  gold  = 150;
+function startGame(difficulty = 'easy') {
+  if (difficulty === 'easy') {
+    TOTAL_WAVES = 20;
+  } else if (difficulty === 'normal') {
+    TOTAL_WAVES = 30;
+  }
+
+  gold = 150;
   lives = 20;
-  wave  = 0;
+  wave = 0;
   score = 0;
   gameState = 'between';
   gameSpeed = 1;
 
   // Limpiar entidades anteriores
-  [...towers].forEach(t => { scene.remove(t.group); if(t.laserLine) scene.remove(t.laserLine); });
+  [...towers].forEach(t => { scene.remove(t.group); if (t.laserLine) scene.remove(t.laserLine); });
   [...enemies].forEach(e => scene.remove(e.group));
   [...projectiles].forEach(p => scene.remove(p.mesh));
   [...particles].forEach(p => scene.remove(p.mesh));
   towers = []; enemies = []; projectiles = []; particles = [];
 
   // Liberar tiles
-  for (let r=0; r<GRID_ROWS; r++)
-    for (let c=0; c<GRID_COLS; c++)
-      if (gridTiles[r][c]) { gridTiles[r][c].occupied = false; if(!pathSet.has(`${r},${c}`)) gridTiles[r][c].type = 'build'; }
+  for (let r = 0; r < GRID_ROWS; r++)
+    for (let c = 0; c < GRID_COLS; c++)
+      if (gridTiles[r][c]) { gridTiles[r][c].occupied = false; if (!pathSet.has(`${r},${c}`)) gridTiles[r][c].type = 'build'; }
 
-  document.getElementById('overlay-start').style.display    = 'none';
+  document.getElementById('overlay-start').style.display = 'none';
   document.getElementById('overlay-gameover').style.display = 'none';
-  document.getElementById('overlay-win').style.display      = 'none';
+  document.getElementById('overlay-win').style.display = 'none';
   document.getElementById('btn-start-wave').disabled = false;
   document.getElementById('btn-start-wave').textContent = '▶ Iniciar Oleada';
 
@@ -1068,9 +1074,10 @@ function triggerWin() {
 //  BINDEAR UI
 // ============================================================
 function bindUI() {
-  document.getElementById('btn-play').addEventListener('click', startGame);
-  document.getElementById('btn-restart').addEventListener('click', startGame);
-  document.getElementById('btn-restart-win').addEventListener('click', startGame);
+  document.getElementById('btn-play-easy').addEventListener('click', () => startGame('easy'));
+  document.getElementById('btn-play-normal').addEventListener('click', () => startGame('normal'));
+  document.getElementById('btn-restart').addEventListener('click', () => startGame('easy')); // default restart
+  document.getElementById('btn-restart-win').addEventListener('click', () => startGame('easy'));
 
   document.getElementById('btn-start-wave').addEventListener('click', () => {
     if (gameState === 'between' || (gameState === 'playing' && wave === 0)) startWave();
@@ -1099,13 +1106,13 @@ function bindUI() {
   });
 
   const canvas = document.getElementById('game-canvas');
-  canvas.addEventListener('click',       onCanvasClick);
-  canvas.addEventListener('mousedown',   onMouseDown);
-  canvas.addEventListener('mousemove',   onMouseMove);
-  canvas.addEventListener('mouseup',     onMouseUp);
-  canvas.addEventListener('wheel',       onWheel, { passive: true });
+  canvas.addEventListener('click', onCanvasClick);
+  canvas.addEventListener('mousedown', onMouseDown);
+  canvas.addEventListener('mousemove', onMouseMove);
+  canvas.addEventListener('mouseup', onMouseUp);
+  canvas.addEventListener('wheel', onWheel, { passive: true });
   canvas.addEventListener('contextmenu', onContextMenu);
-  window.addEventListener('keydown',     onKeyDown);
+  window.addEventListener('keydown', onKeyDown);
 }
 
 // ============================================================
@@ -1115,7 +1122,7 @@ function animate() {
   requestAnimationFrame(animate);
 
   const rawDt = Math.min(clock.getDelta(), 0.05);
-  const dt    = (gameState === 'playing' ? rawDt * gameSpeed : rawDt);
+  const dt = (gameState === 'playing' ? rawDt * gameSpeed : rawDt);
 
   if (gameState === 'playing') {
     updateWaveSpawner(dt);

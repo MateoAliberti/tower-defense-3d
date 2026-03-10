@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tower Defense 3D</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
   <!-- HUD superior -->
   <div id="hud-top">
@@ -80,7 +82,14 @@
         <div>🖱️ Rueda — Zoom</div>
         <div>⎋ Escape — Cancelar selección</div>
       </div>
-      <button id="btn-play" class="btn-play">🎮 ¡Jugar!</button>
+      <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
+        <button id="btn-play-easy" class="btn-play"
+          style="padding: 12px 24px; font-size: 1rem; background: linear-gradient(135deg, #22aa55, #116633);">🟢 Fácil
+          (20)</button>
+        <button id="btn-play-normal" class="btn-play"
+          style="padding: 12px 24px; font-size: 1rem; background: linear-gradient(135deg, #ff8800, #c84f0f);">🟠 Normal
+          (30)</button>
+      </div>
     </div>
   </div>
 
@@ -109,4 +118,5 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="game.js"></script>
 </body>
+
 </html>
