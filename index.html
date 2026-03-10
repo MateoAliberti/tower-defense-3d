@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tower Defense 3D</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- HUD superior -->
+  <div id="hud-top">
+    <div class="hud-stat">
+      <span class="hud-icon">💰</span>
+      <span id="hud-gold">150</span>
+    </div>
+    <div class="hud-stat">
+      <span class="hud-icon">❤️</span>
+      <span id="hud-lives">20</span>
+    </div>
+    <div class="hud-stat">
+      <span class="hud-icon">🌊</span>
+      <span id="hud-wave">1 / 15</span>
+    </div>
+    <button id="btn-start-wave" class="btn-primary">▶ Iniciar Oleada</button>
+    <button id="btn-speed" class="btn-secondary">⏩ ×1</button>
+  </div>
+
+  <!-- Panel lateral de torres -->
+  <div id="tower-panel">
+    <h3 class="panel-title">Torres</h3>
+
+    <div class="tower-card" id="tower-btn-gun" data-type="gun">
+      <div class="tower-icon" style="background:#4a9eff;">🔫</div>
+      <div class="tower-info">
+        <div class="tower-name">Pistola</div>
+        <div class="tower-cost">50 💰</div>
+        <div class="tower-stats">DMG: 20 | Vel: ●●●</div>
+      </div>
+    </div>
+
+    <div class="tower-card" id="tower-btn-cannon" data-type="cannon">
+      <div class="tower-icon" style="background:#ff5555;">💣</div>
+      <div class="tower-info">
+        <div class="tower-name">Cañón</div>
+        <div class="tower-cost">100 💰</div>
+        <div class="tower-stats">DMG: 80 | Splash</div>
+      </div>
+    </div>
+
+    <div class="tower-card" id="tower-btn-laser" data-type="laser">
+      <div class="tower-icon" style="background:#44ff88;">⚡</div>
+      <div class="tower-info">
+        <div class="tower-name">Láser</div>
+        <div class="tower-cost">150 💰</div>
+        <div class="tower-stats">DMG: 12/t | Continuo</div>
+      </div>
+    </div>
+
+    <button id="btn-sell" class="btn-danger" style="display:none;">🗑️ Vender</button>
+    <div id="tower-selected-info" style="display:none;">
+      <div class="separator"></div>
+      <div id="tsi-name" class="tsi-title"></div>
+      <div id="tsi-level"></div>
+      <div id="tsi-stats"></div>
+      <button id="btn-upgrade" class="btn-upgrade">⬆ Mejorar</button>
+    </div>
+  </div>
+
+  <!-- Canvas 3D -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Overlay de inicio -->
+  <div id="overlay-start" class="overlay">
+    <div class="overlay-box">
+      <h1 class="game-title">⚔️ Tower Defense 3D</h1>
+      <p class="game-subtitle">Defiende tu base de las oleadas enemigas</p>
+      <div class="controls-info">
+        <div>🖱️ Click Izq — Colocar / Seleccionar</div>
+        <div>🖱️ Click Der — Rotar cámara</div>
+        <div>🖱️ Rueda — Zoom</div>
+        <div>⎋ Escape — Cancelar selección</div>
+      </div>
+      <button id="btn-play" class="btn-play">🎮 ¡Jugar!</button>
+    </div>
+  </div>
+
+  <!-- Overlay Game Over -->
+  <div id="overlay-gameover" class="overlay" style="display:none;">
+    <div class="overlay-box overlay-red">
+      <h1>💀 Game Over</h1>
+      <p id="go-wave-reached"></p>
+      <button id="btn-restart" class="btn-play">🔄 Reintentar</button>
+    </div>
+  </div>
+
+  <!-- Overlay Victoria -->
+  <div id="overlay-win" class="overlay" style="display:none;">
+    <div class="overlay-box overlay-gold">
+      <h1>🏆 ¡Victoria!</h1>
+      <p>Sobreviviste las 15 oleadas</p>
+      <button id="btn-restart-win" class="btn-play">🔄 Jugar de nuevo</button>
+    </div>
+  </div>
+
+  <!-- Tooltip hover -->
+  <div id="tile-tooltip" class="tooltip" style="display:none;">Construir aquí</div>
+
+  <!-- Three.js desde CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
